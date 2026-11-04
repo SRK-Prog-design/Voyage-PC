@@ -1,0 +1,15 @@
+NSSL Voyage Log - install guide
+================================
+An installable web app (PWA). It needs to be put on any free HTTPS web host once.
+
+1. Upload this whole folder (index.html, manifest.webmanifest, sw.js and the icon files) to a free host:
+   - Netlify Drop: go to app.netlify.com/drop and drag the folder in.
+   - or GitHub Pages / Cloudflare Pages.
+2. Open the web address on your phone in Chrome: menu (3 dots) > Install app (or Add to Home screen).
+3. On PC: open the address in Chrome or Edge and click the install icon in the address bar.
+The ship icon then appears like any other app and opens full screen.
+
+Notes
+- Data is stored on the device. To move it between phone and PC use Data > Backup, then Restore.
+- Open the app online once so it can save itself for offline use.
+- For an Android .apk file: put the hosted address into pwabuilder.com and download the Android package.

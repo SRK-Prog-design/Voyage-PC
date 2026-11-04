@@ -1,0 +1,28 @@
+Automatic phone <-> PC sync (free Firebase database)
+====================================================
+One-time setup (about 5 minutes)
+1. Go to console.firebase.google.com and sign in with a Google account.
+2. Add project (any name, e.g. "voyage-log"). Google Analytics can be off.
+3. Build > Realtime Database > Create database. Pick a location and choose "locked mode".
+4. Open the Rules tab, replace everything with the text below and press Publish:
+
+{
+  "rules": {
+    "voyage": {
+      "$code": { ".read": true, ".write": true }
+    }
+  }
+}
+
+5. On the Data tab of Realtime Database copy the address at the top, e.g. https://voyage-log-default-rtdb.europe-west1.firebasedatabase.app
+
+In the app (do this on the phone and on the PC)
+1. Open the Data tab > Auto sync.
+2. Paste the database URL.
+3. On the FIRST device tap "New code", then "Save & sync".
+4. On the second device paste the same URL and type the same code, then "Save & sync".
+The status shows "Synced hh:mm". After that every change appears on the other device within seconds.
+
+Notes
+- Anyone who knows both the URL and the code can read the data, so keep the code private (it is long and random).
+- Using a separate Firebase project from your Domino's app is recommended.
