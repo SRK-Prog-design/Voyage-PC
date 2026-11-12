@@ -278,6 +278,7 @@ body,input,select,.kt,.row,.nav{transition:background-color .35s,color .35s,bord
 .brand p{display:flex;align-items:center;flex-wrap:wrap;gap:0 7px;margin-top:8px;font-family:Bahnschrift,"DIN Alternate","Segoe UI","Roboto Condensed",system-ui,sans-serif;font-weight:700;font-size:10.5px;letter-spacing:.07em;color:#e9f2f7}
 .brand p i{display:inline-block;width:3px;height:10px;background:#e8372b;border-radius:1px}
 .brand p i{margin:0 7px}.brand p i:first-child{margin-left:0}
+#updb{position:fixed;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top,0px));z-index:95;background:var(--acc2);color:#04202e;padding:11px 14px;border-radius:14px;font-weight:800;text-align:center;box-shadow:0 8px 24px #0006;cursor:pointer}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script></head><body>
 <svg width="0" height="0" style="position:absolute"><symbol id="tk" viewBox="0 0 64 40"><g transform="translate(64 0) scale(-1 1)">
 <rect x="51" y="5" width="5" height="7" fill="#d62839"/><rect x="51" y="8" width="5" height="1.5" fill="#fff"/>
@@ -336,6 +337,7 @@ body,input,select,.kt,.row,.nav{transition:background-color .35s,color .35s,bord
 <div id="rpanel" hidden><input type="file" id="bf" accept=".json,application/json"><textarea id="bt" placeholder="…or paste backup text here"></textarea><div class="brr"><button class="btn" id="brs">Restore now</button><button class="btn s" id="bcp">Copy backup text</button></div></div></div>
 <div class="card" id="instc" hidden><button class="btn" id="inst" style="width:100%">📲 Install app on this device</button></div>
 <div class="card"><div class="hd"><h2>☁️ Auto sync</h2><span class="pill2" id="sy2">This device only</span></div>
+<div class="mut" id="syi" style="margin:2px 0 8px;font-size:12px"></div>
 <input id="fbu" placeholder="Database URL  https://…firebasedatabase.app" autocomplete="off" style="font-size:13px">
 <input id="fbk" placeholder="Sync code" autocomplete="off" style="margin-top:8px">
 <div class="g" style="margin-top:8px"><button class="btn s" id="fbn">🎲 New code</button><button class="btn" id="fbs">✔ Save &amp; sync</button></div>
@@ -346,7 +348,8 @@ body,input,select,.kt,.row,.nav{transition:background-color .35s,color .35s,bord
 <div class="g3c"><div><label>Day starts</label><input type="time" id="ss"></div><div><label>Day ends</label><input type="time" id="se"></div><div><label>Break (min)</label><input type="number" id="brk" min="0" step="5"></div></div>
 <div class="g" style="margin-top:12px"><div class="full"><label class="chk"><input type="checkbox" id="trv"> Count travel time as overtime</label></div><div class="full"><label>🎌 German public holidays – federal state</label><select id="hst"></select></div></div>
 <div class="mut" id="whx" style="margin-top:8px"></div></div>
-<div class="mut" id="ver" style="text-align:center;margin:16px 0 4px">Version 15 · NSSLGlobal logo · sync fixes</div>
+<div id="updb" hidden onclick="doUpdate()">⬆ New version available – tap to update</div>
+<div class="mut" id="ver" style="text-align:center;margin:16px 0 4px">Version 16 · two-way sync fixes</div>
 </main>
 
 <nav class="nav" id="nav"><button data-t="log" class="on"><span>🧭</span>Log</button><button data-t="cal"><span>📅</span>Calendar</button><button data-t="proj"><span>🚢</span>Projects</button><button data-t="sum"><span>📡</span>Summary</button><button data-t="data"><span>☁️</span>Data</button></nav>
@@ -369,23 +372,25 @@ let S,ed=null,px=[];
 try{S=norm(JSON.parse(localStorage.getItem(K)))}catch(e){S=norm()}
 const setSync=t=>{$('#sy2').textContent=t};
 const sig=o=>JSON.stringify([o.logs.map(l=>[l.id,l.u||0]).sort(),o.projects.map(p=>[p.id,p.u||0,p.c,p.done]).sort(),(o.events||[]).map(e=>[e.id,e.u||0]).sort(),o.su||0,JSON.stringify(o.set),Object.keys(o.del||{}).sort()]);
+const uTick=()=>{let m=Date.now();const f=a=>(a||[]).forEach(x=>{if((x.u||0)>=m)m=x.u+1});f(S.logs);f(S.projects);f(S.events);Object.values(S.del||{}).forEach(v=>{if(v>=m)m=v+1});return m};
 function mergeS(A,B){const del={};[A.del,B.del].forEach(d=>Object.keys(d||{}).forEach(k=>del[k]=Math.max(del[k]||0,d[k])));
  const take=k=>{const m={};[...(A[k]||[]),...(B[k]||[])].forEach(o=>{const c=m[o.id];if(!c||(o.u||0)>(c.u||0))m[o.id]=o});return Object.values(m).filter(o=>!(del[o.id]>=(o.u||0)))};
  const nw=(A.su||0)>=(B.su||0)?A:B;return norm({logs:take('logs'),projects:take('projects'),events:take('events'),set:nw.set,su:nw.su||0,del,ts:Math.max(A.ts||0,B.ts||0)})}
-let cloud=null,pt,busy=false,busyAt=0;
+let cloud=null,pt,busy=false,busyAt=0,again=false;const APPV='16';
 function persist(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
 function save(){S.ts=Date.now();persist();push()}
-function push(){if(!cloud)return;clearTimeout(pt);pt=setTimeout(syncNow,500)}
+function push(){if(!cloud)return;clearTimeout(pt);pt=setTimeout(()=>{if(busy&&Date.now()-busyAt<30000)again=true;else syncNow()},500)}
 async function syncNow(){if(!cloud)return;if(busy&&Date.now()-busyAt<30000)return;busy=true;busyAt=Date.now();
  try{setSync('☁ Syncing…');const sn=await cloud.get();let M=S,rem=null;
   if(sn.exists){rem=norm(JSON.parse(sn.data().json));M=mergeS(S,rem)}
   const changed=sig(M)!==sig(S);S=M;persist();
   if(!rem||sig(M)!==sig(rem))await cloud.set({json:JSON.stringify(S),ts:Date.now()});
   if(changed){if(ed&&!S.logs.some(l=>l.id==ed))setEd(null);fillSet();render()}
-  setSync('☁ Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}))}
+  setSync('☁ Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));info(sn)}
  catch(e){setSync('⚠ Sync problem ('+((e&&(e.code||e.message))||'error')+') – saved on this device')}
- busy=false}
-function adopt(json){const o=norm(JSON.parse(json)),keep=new Set([...o.logs,...o.projects,...(o.events||[])].map(x=>x.id)),now=Date.now(),del=Object.assign({},S.del,o.del);
+ busy=false;if(again){again=false;setTimeout(syncNow,300)}}
+function info(sn){const e=$('#syi');if(!e)return;let t='–';try{if(sn&&sn.exists&&sn.data().ts)t=new Date(sn.data().ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}catch(x){}e.textContent='This device: '+S.logs.length+' entries · '+S.projects.length+' projects · '+(S.events||[]).length+' jobs · cloud last written '+t}
+function adopt(json){const o=norm(JSON.parse(json)),keep=new Set([...o.logs,...o.projects,...(o.events||[])].map(x=>x.id)),now=uTick(),del=Object.assign({},S.del,o.del);
  [...S.logs,...S.projects,...(S.events||[])].forEach(x=>{if(!keep.has(x.id))del[x.id]=now});[...o.logs,...o.projects,...(o.events||[])].forEach(x=>{x.u=now;delete del[x.id]});
  o.del=del;o.su=now;S=o;persist();setEd(null);fillSet();render();showPop()}
 $('#syn').onclick=()=>cloud?syncNow():toast('Enter the database URL and code, then tap Save & sync');
@@ -393,7 +398,7 @@ $('#syn').onclick=()=>cloud?syncNow():toast('Enter the database URL and code, th
  if(!u||!db){setSync('This device only');return}
  const uid=await u.id();if(!uid){setSync('Local only – sign in to sync');return}
  cloud=db.collection('data/users/'+uid).doc('voyage');await syncNow();
- cloud.onSnapshot(s=>{if(!s.exists||busy)return;try{if(sig(mergeS(S,norm(JSON.parse(s.data().json))))!==sig(S))syncNow()}catch(e){}});
+ cloud.onSnapshot(s=>{if(!s.exists)return;if(busy){again=true;return}try{if(sig(mergeS(S,norm(JSON.parse(s.data().json))))!==sig(S))syncNow()}catch(e){}});
  setInterval(()=>{if(!document.hidden)syncNow()},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncNow()})}
  catch(e){setTimeout(fbStart,0)}})();
 const pc=i=>(S.projects.find(p=>p.id==i)||{c:'#7f9aa8'}).c,pname=i=>(S.projects.find(p=>p.id==i)||{}).name;
@@ -449,7 +454,7 @@ function rx(){$('#xl').innerHTML=px.map((x,i)=>`<div class="dl"><span>${esc(x.t)
 window.rmx=i=>{px.splice(i,1);rx()};window.pickC=c=>setXc(c);
 $('#xadd').onclick=()=>{const a=parseFloat($('#xa').value),c=($('#xc').value||(S.set.recent||['EUR'])[0]).toUpperCase(),r=c=='EUR'?1:parseFloat($('#xrv').value);
  if(!(a>0))return toast('Enter an amount');if(c.length!=3)return toast('Pick a currency');if(!(r>0)){xv();return toast('Enter the rate for '+c)}
- px.push({t:$('#xd').value.trim()||$('#xk').value,k:$('#xk').value,a,c,r,p:$('#xp').value});S.set.recent=[c,...(S.set.recent||[]).filter(z=>z!=c)].slice(0,4);S.su=Date.now();
+ px.push({t:$('#xd').value.trim()||$('#xk').value,k:$('#xk').value,a,c,r,p:$('#xp').value});S.set.recent=[c,...(S.set.recent||[]).filter(z=>z!=c)].slice(0,4);S.su=uTick();
  $('#xd').value='';$('#xa').value='';setXc(c);rx();$('#xdet').open=true};
 function setEd(v){ed=v;$('#ft').textContent=v?'✏️ Edit entry':'⚓ Log a watch';$('#add').textContent=v?'Update entry':'Add to log';$('#cn').hidden=!v}
 function blank(){const L=[...S.logs].sort((a,b)=>b.d.localeCompare(a.d))[0]||{};px=[];$('#xdet').open=false;$('#ls').value=L.ls||'Hotel';$('#le').value=L.le||'Hotel';$('#ts').value='';$('#te').value='';$('#s').value=S.set.ss;$('#e').value=S.set.se;setXc((S.set.recent||['EUR'])[0]);$('#p').value='';$('#n').value='';$('#pp').value='';ppChips();rx();labs()}
@@ -459,23 +464,23 @@ $('#add').onclick=()=>{
  if(!o.d||!o.s||!o.e)return toast('Fill date, start and end work time');
  let nm=$('#p').value.trim();const pr=nm&&S.projects.find(x=>x.name.toLowerCase()==nm.toLowerCase());
  const dup=!ed&&S.logs.some(l=>l.d==o.d&&l.pid==(pr?pr.id:''));
- const doit=()=>{o.u=Date.now();o.pid='';if(nm){let p=pr||mkp(nm);o.pid=p.id}
+ const doit=()=>{o.u=uTick();o.pid='';if(nm){let p=pr||mkp(nm);o.pid=p.id}
   if(ed){Object.assign(S.logs.find(l=>l.id==ed),o)}else S.logs.push({id:id(),...o});
   toast(ed?'Entry updated ✔':'Entry added ✔');burst();cal.sel=o.d;lm=o.d.slice(0,7);setEd(null);blank();save();render()};
  dup?ask('You already have an entry for this day'+(nm?' and project':'')+'. Add another anyway?',doit,'Add anyway'):doit()};
-function mkp(nm){const p={id:id(),name:nm,done:null,u:Date.now(),c:PAL.find(c=>!S.projects.some(p=>p.c==c))||PAL[S.projects.length%PAL.length]};S.projects.push(p);return p}
+function mkp(nm){const p={id:id(),name:nm,done:null,u:uTick(),c:PAL.find(c=>!S.projects.some(p=>p.c==c))||PAL[S.projects.length%PAL.length]};S.projects.push(p);return p}
 $('#addp').onclick=()=>{const nm=$('#pn').value.trim();if(!nm)return;if(!S.projects.some(p=>p.name.toLowerCase()==nm.toLowerCase()))mkp(nm);$('#pn').value='';save();render()};
 window.edit=i=>{const l=S.logs.find(x=>x.id==i);$('#d').value=l.d;$('#ls').value=l.ls||'Hotel';$('#le').value=l.le||'Hotel';$('#ts').value=l.ts||'';$('#s').value=l.s;$('#e').value=l.e;$('#te').value=l.te||'';$('#p').value=l.pid?pname(l.pid):'';$('#n').value=l.n||'';$('#pp').value=(l.pp||[]).join(', ');px=[...(l.x||[])];$('#xdet').open=px.length>0;setEd(i);labs();rx();go('log')};
-window.del=i=>ask('Delete this entry?',()=>{S.logs=S.logs.filter(l=>l.id!=i);S.del[i]=Date.now();if(ed==i){setEd(null);blank()}save();render();toast('Deleted')});
-window.delP=i=>ask('Delete this project? Its entries stay as regular duty.',()=>{S.projects=S.projects.filter(p=>p.id!=i);S.del[i]=Date.now();S.logs.forEach(l=>{if(l.pid==i){l.pid='';l.u=Date.now()}});save();render()});
-window.togP=i=>{const p=S.projects.find(x=>x.id==i);p.u=Date.now();if(p.done)p.done=null;else{const ds=S.logs.filter(l=>l.pid==i&&done(l)).map(l=>l.d).sort();p.done=ds.length?ds[ds.length-1]:today()}save();render()};
-window.setC=(i,c)=>{const p=S.projects.find(p=>p.id==i);p.c=c;p.u=Date.now();save();render()};
+window.del=i=>ask('Delete this entry?',()=>{S.logs=S.logs.filter(l=>l.id!=i);S.del[i]=uTick();if(ed==i){setEd(null);blank()}save();render();toast('Deleted')});
+window.delP=i=>ask('Delete this project? Its entries stay as regular duty.',()=>{S.projects=S.projects.filter(p=>p.id!=i);S.del[i]=uTick();S.logs.forEach(l=>{if(l.pid==i){l.pid='';l.u=uTick()}});save();render()});
+window.togP=i=>{const p=S.projects.find(x=>x.id==i);p.u=uTick();if(p.done)p.done=null;else{const ds=S.logs.filter(l=>l.pid==i&&done(l)).map(l=>l.d).sort();p.done=ds.length?ds[ds.length-1]:today()}save();render()};
+window.setC=(i,c)=>{const p=S.projects.find(p=>p.id==i);p.c=c;p.u=uTick();save();render()};
 window.pick=n=>{$('#p').value=n};window.selDay=d=>{cal.sel=d;render()};
 $('#ao').onclick=()=>{setEd(null);blank();$('#d').value=cal.sel;go('log')};
 $('#pm').onclick=()=>{cal.m--;if(cal.m<0){cal.m=11;cal.y--}render()};$('#nm').onclick=()=>{cal.m++;if(cal.m>11){cal.m=0;cal.y++}render()};
 function fillSet(){$('#ss').value=S.set.ss;$('#se').value=S.set.se;$('#brk').value=S.set.brk;if(!$('#hst').options.length)$('#hst').innerHTML=Object.entries(HSTATES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');$('#hst').value=S.set.st||'';$('#trv').checked=S.set.trv!==false;whx()}
-$('#trv').onchange=()=>{S.set.trv=$('#trv').checked;S.su=Date.now();save();whx();render()};$('#hst').onchange=()=>{S.set.st=$('#hst').value;S.su=Date.now();save();render()};
-['ss','se','brk'].forEach(k=>$('#'+k).oninput=()=>{const v=$('#'+k).value;if(v==='')return;S.set[k]=k=='brk'?+v:v;S.su=Date.now();save();whx();render()});
+$('#trv').onchange=()=>{S.set.trv=$('#trv').checked;S.su=uTick();save();whx();render()};$('#hst').onchange=()=>{S.set.st=$('#hst').value;S.su=uTick();save();render()};
+['ss','se','brk'].forEach(k=>$('#'+k).oninput=()=>{const v=$('#'+k).value;if(v==='')return;S.set[k]=k=='brk'?+v:v;S.su=uTick();save();whx();render()});
 /* backup / restore */
 const bj=()=>JSON.stringify(S,null,1);
 async function dl(name,data){try{if(window.claude){const d=await claude.use('downloads');if(d){await d.save({filename:name,data});return true}}
@@ -667,12 +672,12 @@ window.goEv=i=>{const e=(S.events||[]).find(x=>x.id==i);if(!e)return;if(!$('#upo
 let evEd=null;
 function openEv(e,ds){evEd=e?e.id:null;$('#evt').textContent=e?'Edit scheduled job':'Schedule a job';$('#evname').value=e?e.title:'';$('#evd').value=e?e.d:(ds||cal.sel);$('#evd2').value=e?(e.d2||''):'';$('#evtm').value=e?(e.t||''):'';$('#evp').value=e&&e.pid?pname(e.pid):'';$('#evnote').value=e?(e.nt||''):'';$('#evwrap').hidden=!!e;$('#evw').checked=true;$('#evdel').hidden=!e;$('#evm').hidden=false;setTimeout(()=>$('#evname').focus(),60)}
 window.editEv=i=>openEv((S.events||[]).find(e=>e.id==i));
-window.delEv=i=>ask('Delete this scheduled job and its planned days?',()=>{S.events=S.events.filter(e=>e.id!=i);S.del[i]=Date.now();S.logs.filter(l=>l.ev==i&&!done(l)).forEach(l=>S.del[l.id]=Date.now());S.logs=S.logs.filter(l=>!(l.ev==i&&!done(l)));save();render();toast('Deleted')});
-function addPlanned(e){const a=dd(e.d),z=dd(evEnd(e));for(let x=new Date(a),k=0;x<=z&&k<31;x.setDate(x.getDate()+1),k++){const ds=iso(x);if(ds<today())continue;S.logs.push({id:id(),d:ds,ls:'Hotel',le:'Hotel',ts:'',s:S.set.ss,e:S.set.se,te:'',n:e.title,pid:e.pid||'',x:[],u:Date.now(),ev:e.id})}}
+window.delEv=i=>ask('Delete this scheduled job and its planned days?',()=>{S.events=S.events.filter(e=>e.id!=i);S.del[i]=uTick();S.logs.filter(l=>l.ev==i&&!done(l)).forEach(l=>S.del[l.id]=uTick());S.logs=S.logs.filter(l=>!(l.ev==i&&!done(l)));save();render();toast('Deleted')});
+function addPlanned(e){const a=dd(e.d),z=dd(evEnd(e));for(let x=new Date(a),k=0;x<=z&&k<31;x.setDate(x.getDate()+1),k++){const ds=iso(x);if(ds<today())continue;S.logs.push({id:id(),d:ds,ls:'Hotel',le:'Hotel',ts:'',s:S.set.ss,e:S.set.se,te:'',n:e.title,pid:e.pid||'',x:[],u:uTick(),ev:e.id})}}
 $('#evnew').onclick=()=>openEv(null,cal.sel);$('#evx').onclick=()=>$('#evm').hidden=true;$('#evdel').onclick=()=>{$('#evm').hidden=true;delEv(evEd)};
 $('#evs').onclick=()=>{const t=$('#evname').value.trim(),d=$('#evd').value,d2=$('#evd2').value;if(!t||!d)return toast('Enter the ship or job name and a start date');if(d2&&d2<d)return toast('The end date is before the start date');
  let pid='';const nm=$('#evp').value.trim();if(nm){const p=S.projects.find(x=>x.name.toLowerCase()==nm.toLowerCase())||mkp(nm);pid=p.id}
- S.events=S.events||[];let e=evEd&&S.events.find(x=>x.id==evEd);const o={title:t,d,d2:d2||'',t:$('#evtm').value,pid,nt:$('#evnote').value.trim(),u:Date.now()};
+ S.events=S.events||[];let e=evEd&&S.events.find(x=>x.id==evEd);const o={title:t,d,d2:d2||'',t:$('#evtm').value,pid,nt:$('#evnote').value.trim(),u:uTick()};
  if(e)Object.assign(e,o);else{e={id:id(),...o};S.events.push(e);if($('#evw').checked)addPlanned(e)}
  save();$('#evm').hidden=true;cal.sel=d;cal.y=+d.slice(0,4);cal.m=+d.slice(5,7)-1;render();toast('Scheduled ✔')};
 $('#d').value=today();showLb();fillSet();blank();render();showPop();
@@ -682,18 +687,22 @@ const newCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b=>
 function fbShim(url,code){const base=url.replace(/\/+$/,'')+'/voyage/'+encodeURIComponent(code)+'.json',bad=r=>{const e=new Error('HTTP '+r.status);e.code=(r.status==401||r.status==403)?'permission denied – check database rules':'HTTP '+r.status;return e};let last=null;
  return{async get(){const r=await tf(base,{cache:'no-store'});if(!r.ok)throw bad(r);const j=await r.json();return{exists:!!(j&&j.json),data:()=>j}},
   async set(o){const r=await tf(base,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});if(!r.ok)throw bad(r)},
-  onSnapshot(cb){const t=setInterval(async()=>{if(document.hidden)return;try{const s=await this.get(),k=s.exists?String(s.data().ts):'';if(last!==null&&k!==last)cb(s);last=k}catch(e){}},8000);return()=>clearInterval(t)}}}
+  onSnapshot(cb){const t=setInterval(async()=>{try{const s=await this.get(),k=s.exists?String(s.data().ts):'';if(last!==null&&k!==last)cb(s);last=k}catch(e){}},8000);return()=>clearInterval(t)}}}
 function fbStart(){const c=fbCfg();if(fbUn){fbUn();fbUn=null}if(fbT){clearInterval(fbT);fbT=null}
  if(!c.url||!c.code){cloud=null;setSync('Add URL and code to sync');return}
  if(!/^https:\/\/\S+$/.test(c.url)){cloud=null;setSync('URL must start with https://');return}
  cloud=fbShim(c.url,c.code);syncNow();
- fbUn=cloud.onSnapshot(s=>{if(!s.exists||busy)return;try{if(sig(mergeS(S,norm(JSON.parse(s.data().json))))!==sig(S))syncNow()}catch(e){}});
- fbT=setInterval(()=>{if(!document.hidden)syncNow()},30000)}
+ fbUn=cloud.onSnapshot(s=>{if(!s.exists)return;if(busy){again=true;return}try{if(sig(mergeS(S,norm(JSON.parse(s.data().json))))!==sig(S))syncNow()}catch(e){}});
+ fbT=setInterval(syncNow,30000)}
 $('#fbu').value=fbCfg().url||'';$('#fbk').value=fbCfg().code||'';
 $('#fbr').onclick=()=>{if(!cloud)return toast('Enter the database URL and code first');ask('Replace everything on this device with the data saved in the cloud? Changes that were not synced yet are lost.',async()=>{try{const sn=await cloud.get();if(!sn.exists)return toast('Nothing saved in the cloud yet');S=norm(JSON.parse(sn.data().json));persist();setEd(null);fillSet();render();showPop();setSync('☁ Reloaded from cloud '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));toast('Reloaded from cloud ✔')}catch(e){toast('Could not reach the cloud')}},'Reload')};
 $('#fbn').onclick=()=>{$('#fbk').value=newCode();toast('New code – tap Save & sync')};
 $('#fbs').onclick=()=>{const u=$('#fbu').value.trim();let k=$('#fbk').value.trim();if(!/^https:\/\/\S+$/.test(u))return toast('Enter the database URL starting with https://');if(!k)k=newCode();$('#fbk').value=k;
  try{localStorage.setItem(FBK,JSON.stringify({url:u,code:k}))}catch(e){}fbStart();toast('Saved – syncing…')};
+async function checkUpdate(){if(window.NSSLAndroid||!/^https?:/.test(location.protocol))return;try{const r=await fetch(location.pathname.replace(/[^/]*$/,'')+'index.html?c='+Date.now(),{cache:'no-store'});const t=await r.text();const m=t.match(/id="ver"[^>]*>Version (\d+)/);if(m&&m[1]!==APPV)$('#updb').hidden=false}catch(e){}}
+window.doUpdate=async()=>{try{const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(e){}location.reload()};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncNow();checkUpdate()}});addEventListener('focus',()=>{syncNow()});addEventListener('online',()=>syncNow());
+setTimeout(checkUpdate,4000);setInterval(checkUpdate,600000);
 let ip=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;$('#instc').hidden=false});$('#inst').onclick=async()=>{if(ip){ip.prompt();await ip.userChoice;ip=null;$('#instc').hidden=true}};addEventListener('appinstalled',()=>{$('#instc').hidden=true});
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 /* motion helpers */
