@@ -349,7 +349,7 @@ body,input,select,.kt,.row,.nav{transition:background-color .35s,color .35s,bord
 <div class="g" style="margin-top:12px"><div class="full"><label class="chk"><input type="checkbox" id="trv"> Count travel time as overtime</label></div><div class="full"><label>🎌 German public holidays – federal state</label><select id="hst"></select></div></div>
 <div class="mut" id="whx" style="margin-top:8px"></div></div>
 <div id="updb" hidden onclick="doUpdate()">⬆ New version available – tap to update</div>
-<div class="mut" id="ver" style="text-align:center;margin:16px 0 4px">Version 16 · two-way sync fixes</div>
+<div class="mut" id="ver" style="text-align:center;margin:16px 0 4px">Version 17 · PC sync fix</div>
 </main>
 
 <nav class="nav" id="nav"><button data-t="log" class="on"><span>🧭</span>Log</button><button data-t="cal"><span>📅</span>Calendar</button><button data-t="proj"><span>🚢</span>Projects</button><button data-t="sum"><span>📡</span>Summary</button><button data-t="data"><span>☁️</span>Data</button></nav>
@@ -376,7 +376,7 @@ const uTick=()=>{let m=Date.now();const f=a=>(a||[]).forEach(x=>{if((x.u||0)>=m)
 function mergeS(A,B){const del={};[A.del,B.del].forEach(d=>Object.keys(d||{}).forEach(k=>del[k]=Math.max(del[k]||0,d[k])));
  const take=k=>{const m={};[...(A[k]||[]),...(B[k]||[])].forEach(o=>{const c=m[o.id];if(!c||(o.u||0)>(c.u||0))m[o.id]=o});return Object.values(m).filter(o=>!(del[o.id]>=(o.u||0)))};
  const nw=(A.su||0)>=(B.su||0)?A:B;return norm({logs:take('logs'),projects:take('projects'),events:take('events'),set:nw.set,su:nw.su||0,del,ts:Math.max(A.ts||0,B.ts||0)})}
-let cloud=null,pt,busy=false,busyAt=0,again=false;const APPV='16';
+let cloud=null,pt,busy=false,busyAt=0,again=false;const APPV='17';
 function persist(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
 function save(){S.ts=Date.now();persist();push()}
 function push(){if(!cloud)return;clearTimeout(pt);pt=setTimeout(()=>{if(busy&&Date.now()-busyAt<30000)again=true;else syncNow()},500)}
@@ -685,7 +685,7 @@ const FBK='nssl_fb';const tf=(u,o)=>{const c=new AbortController(),t=setTimeout(
 const fbCfg=()=>{try{return JSON.parse(localStorage.getItem(FBK)||'null')||{}}catch(e){return{}}};
 const newCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b=>b.toString(16).padStart(2,'0')).join('');
 function fbShim(url,code){const base=url.replace(/\/+$/,'')+'/voyage/'+encodeURIComponent(code)+'.json',bad=r=>{const e=new Error('HTTP '+r.status);e.code=(r.status==401||r.status==403)?'permission denied – check database rules':'HTTP '+r.status;return e};let last=null;
- return{async get(){const r=await tf(base,{cache:'no-store'});if(!r.ok)throw bad(r);const j=await r.json();return{exists:!!(j&&j.json),data:()=>j}},
+ return{async get(){const r=await tf(base+'?_='+Date.now(),{cache:'no-store'});if(!r.ok)throw bad(r);const j=await r.json();return{exists:!!(j&&j.json),data:()=>j}},
   async set(o){const r=await tf(base,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});if(!r.ok)throw bad(r)},
   onSnapshot(cb){const t=setInterval(async()=>{try{const s=await this.get(),k=s.exists?String(s.data().ts):'';if(last!==null&&k!==last)cb(s);last=k}catch(e){}},8000);return()=>clearInterval(t)}}}
 function fbStart(){const c=fbCfg();if(fbUn){fbUn();fbUn=null}if(fbT){clearInterval(fbT);fbT=null}
@@ -704,7 +704,7 @@ window.doUpdate=async()=>{try{const rs=await navigator.serviceWorker.getRegistra
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncNow();checkUpdate()}});addEventListener('focus',()=>{syncNow()});addEventListener('online',()=>syncNow());
 setTimeout(checkUpdate,4000);setInterval(checkUpdate,600000);
 let ip=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;$('#instc').hidden=false});$('#inst').onclick=async()=>{if(ip){ip.prompt();await ip.userChoice;ip=null;$('#instc').hidden=true}};addEventListener('appinstalled',()=>{$('#instc').hidden=true});
-if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{}));
 /* motion helpers */
 let CV={};
 const RM=()=>window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
