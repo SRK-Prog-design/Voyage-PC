@@ -410,6 +410,16 @@ body::after{width:340px;height:340px;right:-120px;bottom:6vh;background:#ee3b2b2
 @keyframes csheen{0%{background-position:130% 0}60%,100%{background-position:-130% 0}}
 .card:nth-of-type(2)::before{animation-delay:-3s}.card:nth-of-type(3)::before{animation-delay:-6s}.card:nth-of-type(4)::before{animation-delay:-8s}
 
+
+/* === v18c: kinds, symbols === */
+.cd.vc::after{content:none!important;background:none!important}
+.bdg{position:absolute;right:3px;bottom:2px;font-size:13px;line-height:1;font-style:normal;filter:drop-shadow(0 1px 1px #0005);animation:vpulse 3.2s ease-in-out infinite}
+.bdg .vi{width:15px;height:15px}
+.sy{width:42px;height:42px;border-radius:13px;border:1px solid var(--line);background:var(--inp);font-size:21px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:transform .2s}
+.sy .vi{width:25px;height:25px}.sy:active{transform:scale(.9)}
+.sy.on{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 30%,transparent);background:color-mix(in srgb,var(--acc) 12%,var(--inp))}
+#evk button{flex:1;padding:9px 4px;white-space:nowrap}
+
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script></head><body>
 <svg width="0" height="0" style="position:absolute"><symbol id="tk" viewBox="0 0 64 40"><g transform="translate(64 0) scale(-1 1)">
 <rect x="51" y="5" width="5" height="7" fill="#d62839"/><rect x="51" y="8" width="5" height="1.5" fill="#fff"/>
@@ -489,10 +499,11 @@ body::after{width:340px;height:340px;right:-120px;bottom:6vh;background:#ee3b2b2
 
 <nav class="nav" id="nav"><button data-t="log" class="on"><span>🧭</span>Log</button><button data-t="cal"><span>📅</span>Calendar</button><button data-t="proj"><span>🚢</span>Projects</button><button data-t="sum"><span>📡</span>Summary</button><button data-t="data"><span>☁️</span>Data</button></nav>
 <div id="evm" class="sheet" hidden><div class="sh"><b id="evt" style="flex:1;align-self:center;font-size:18px">Schedule a job</b><button class="btn s" id="evx">✕</button></div>
-<div class="evb"><div class="seg" id="evk"><button type="button" data-k="job" class="on">📌 Job</button><button type="button" data-k="vac"><svg class="vi" viewBox="0 0 24 24"><use href="#vico"/></svg> Vacation</button></div><label id="evnl" style="margin-top:12px">Ship / job name</label><input id="evname" placeholder="e.g. MV Atlantic – radar service">
-<div class="g" style="margin-top:10px"><div><label>From date</label><input type="date" id="evd"></div><div><label>To date (optional)</label><input type="date" id="evd2"></div><div id="evtmw"><label>Start time (optional)</label><input type="time" id="evtm"></div><div id="evpw"><label>Project (optional)</label><input id="evp" list="pl" placeholder="Project"></div></div>
+<div class="evb"><div class="seg" id="evk"><button type="button" data-k="job" class="on">📌 Job</button><button type="button" data-k="vac"><svg class="vi" viewBox="0 0 24 24"><use href="#vico"/></svg> Vacation</button><button type="button" data-k="event">🎉 Event</button><button type="button" data-k="meet">👥 Meeting</button></div><label id="evnl" style="margin-top:12px">Ship / job name</label><input id="evname" placeholder="e.g. MV Atlantic – radar service">
+<div class="g" style="margin-top:10px"><div><label>From date</label><input type="date" id="evd"></div><div><label>To date (optional)</label><input type="date" id="evd2"></div><div id="evtmw"><label>Start time (optional)</label><input type="time" id="evtm"></div><div id="evt2w" hidden><label>End time (optional)</label><input type="time" id="evt2"></div><div id="evpw"><label>Project (optional)</label><input id="evp" list="pl" placeholder="Project"></div></div>
 <label style="margin-top:10px">Notes</label><input id="evnote" placeholder="Port, contact person…">
-<div id="evcw" hidden style="margin-top:12px"><label>Vacation colour</label><div class="vcs" id="evcs"></div><input type="color" id="evc" value="#e64980" aria-label="Custom colour" style="margin-top:8px"></div>
+<div id="evcw" hidden style="margin-top:12px"><label>Colour</label><div class="vcs" id="evcs"></div><input type="color" id="evc" value="#e64980" aria-label="Custom colour" style="margin-top:8px"></div>
+<div id="evsw" style="margin-top:12px"><label>Symbol</label><div class="vcs" id="evss"></div></div>
 <div id="evwrap"><label class="chk"><input type="checkbox" id="evw" checked>Also add the days to the logbook as planned</label></div>
 <div class="brr" style="margin-top:14px"><button class="btn" id="evs">Save</button><button class="btn s d" id="evdel" hidden>Delete</button></div></div></div>
 <div id="upop" class="md" hidden><div class="pop"><div class="pophd">📌 Coming up</div><div id="popl"></div><div class="brr" style="margin-top:14px;justify-content:flex-end"><button class="btn s" id="popc">Open calendar</button><button class="btn" id="pok">Got it</button></div></div></div>
@@ -754,17 +765,17 @@ function render(){ppChips();
  const first=new Date(cal.y,cal.m,1),n=new Date(cal.y,cal.m+1,0).getDate();
  $('#mt2').textContent=first.toLocaleDateString(undefined,{month:'long',year:'numeric'});
  let h='SMTWTFS'.split('').map(x=>`<b>${x}</b>`).join('')+'<i></i>'.repeat(first.getDay());
- for(let d=1;d<=n;d++){const ds=iso(new Date(cal.y,cal.m,d)),DI=dayInfo(ds),X=S.logs.filter(l=>l.d==ds),EV=(S.events||[]).some(e=>!e.v&&evCovers(e,ds)),VC=(S.events||[]).find(e=>e.v&&evCovers(e,ds));
+ for(let d=1;d<=n;d++){const ds=iso(new Date(cal.y,cal.m,d)),DI=dayInfo(ds),X=S.logs.filter(l=>l.d==ds),EV=(S.events||[]).find(e=>!isCol(e)&&evCovers(e,ds)),VC=(S.events||[]).filter(e=>isCol(e)&&evCovers(e,ds)).sort((a,b)=>(kd(b)=='vac')-(kd(a)=='vac'))[0];
   const cs=[...new Set(X.map(l=>l.pid||''))].map(k=>k?pc(k):'var(--wk)'),pl=X.length&&X.every(l=>!done(l));let st='';
   if(cs.length){const fg=cs[0]=='var(--wk)'?'#fff':ink(cs[0]);
    const bg=pl?`repeating-linear-gradient(45deg,${cs[0]} 0 5px,var(--inp) 5px 10px)`:(cs.length==1?cs[0]:'linear-gradient(135deg,'+cs.map((c,k)=>`${c} ${k*100/cs.length}% ${(k+1)*100/cs.length}%`).join(',')+')');
    st=`background:${bg};color:${pl?'var(--ink)':fg};border-color:${cs[0]}`}
   else if(VC){const vc=VC.c||VCOL;st=`background:linear-gradient(135deg,${vc},color-mix(in srgb,${vc} 60%,#fff));color:${ink(vc)};border-color:${vc}`}
   if(VC)st+=`;--vcc:${VC.c||VCOL}`;
-  h+=`<button class="cd ${cs.length||VC?'wd':''} ${VC?'vc':''} ${DI.we?'we':''} ${DI.name?'ho':''} ${ds==today()?'td':''} ${ds==cal.sel?'sel':''}" style="${st}" ${VC?`title="${esc(VC.title)}"`:''} onclick="selDay('${ds}')">${X.some(l=>ot(l)>0)?'<em>⚡</em>':''}${EV?'<sup class="evp">📌</sup>':''}${DI.name?'<i class="hdot"></i>':''}${d}</button>`}
+  h+=`<button class="cd ${cs.length||VC?'wd':''} ${VC?'vc':''} ${DI.we?'we':''} ${DI.name?'ho':''} ${ds==today()?'td':''} ${ds==cal.sel?'sel':''}" style="${st}" ${VC?`title="${esc(VC.title)}"`:''} onclick="selDay('${ds}')">${X.some(l=>ot(l)>0)?'<em>⚡</em>':''}${EV?`<sup class="evp">${esym(EV)}</sup>`:''}${VC?`<i class="bdg">${esym(VC)}</i>`:''}${DI.name?'<i class="hdot"></i>':''}${d}</button>`}
  $('#cg').innerHTML=h;{const ids=new Set(S.logs.filter(l=>l.d.startsWith(cal.y+'-'+String(cal.m+1).padStart(2,'0'))).map(l=>l.pid||''));$('#clg').innerHTML=[...ids].map(k=>k?`<span class="lg"><i style="background:${pc(k)}"></i>${esc(pname(k))}</span>`:'<span class="lg"><i style="background:var(--wk)"></i>Regular duty</span>').join('')+vacLg()}$('#dt').textContent=nice(cal.sel);vacStat();{const di=dayInfo(cal.sel),Dd=S.logs.filter(l=>l.d==cal.sel);$('#hn').innerHTML=(di.name?'🎌 '+esc(di.name)+' – public holiday':(di.we?'Weekend':''))+(di.off?' · all time counts as overtime':'')+(Dd.length?(di.off?'<br>':'')+'Day total: '+fmt(Dd.reduce((a,l)=>a+hrs(l),0))+' · ⚡ '+fmt(Dd.reduce((a,l)=>a+ot(l),0))+' overtime':'')}
  const D=S.logs.filter(l=>l.d==cal.sel);$('#dl').innerHTML=D.length?D.map(row).join(''):'<div class="empty">Nothing logged or planned. Tap ＋ Add.</div>';
- $('#dev').innerHTML=(S.events||[]).filter(e=>evCovers(e,cal.sel)).map(e=>`<div class="evr${e.v?' vac':''}" ${e.v?`style="--vc:${e.c||VCOL}"`:''}><div><b>${e.v?VI:'📌'} ${esc(e.title)}</b><div class="mut">${rangeText(e)}${e.pid?' · '+esc(pname(e.pid)):''}${e.nt?' · '+esc(e.nt):''}</div></div><div class="ib"><button onclick="editEv('${e.id}')">✏️</button><button onclick="delEv('${e.id}')">🗑</button></div></div>`).join('');renderUpc();
+ $('#dev').innerHTML=(S.events||[]).filter(e=>evCovers(e,cal.sel)).map(e=>`<div class="evr${isCol(e)?' vac':''}" ${isCol(e)?`style="--vc:${ecol(e)}"`:''}><div><b>${esym(e)} ${esc(e.title)}</b><div class="mut">${rangeText(e)}${e.pid?' · '+esc(pname(e.pid)):''}${e.nt?' · '+esc(e.nt):''}</div></div><div class="ib"><button onclick="editEv('${e.id}')">✏️</button><button onclick="delEv('${e.id}')">🗑</button></div></div>`).join('');renderUpc();
  $('#plist').innerHTML=S.projects.length?S.projects.map(p=>{const s=pstats(p),A=S.logs.filter(l=>l.pid==p.id).sort((a,b)=>a.d.localeCompare(b.d)),cat={};s.X.forEach(x=>cat[x.k]=(cat[x.k]||0)+eurx(x));
   return`<div class="card pc" style="--c:${p.c}"><div class="hd"><b class="pt">${esc(p.name)}</b><div class="hr"><input type="color" value="${p.c}" onchange="setC('${p.id}',this.value)" aria-label="Colour"><span class="tag" style="background:${p.done?'#2f9e44':p.c};color:${p.done?'#fff':ink(p.c)}">${p.done?'Done':'Active'}</span></div></div>
   <div class="kp c4">${kt('📅','Days',s.days)}${kt('⏱','Hours',fmt(s.h),'w')}${kt('⚡','Overtime',fmt(s.ot),'o')}${kt('💶','Spent',money(s.sp),'mo')}</div>
@@ -793,16 +804,20 @@ try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTh
 applyTheme();
 $$('#thseg button').forEach(b=>b.onclick=()=>{try{localStorage.setItem(TK,b.dataset.t)}catch(e){}applyTheme();toast('Theme: '+b.textContent.replace(/[^A-Za-z]/g,''))});
 /* scheduled jobs */
-const evEnd=e=>e.d2&&e.d2>=e.d?e.d2:e.d,evCovers=(e,ds)=>ds>=e.d&&ds<=evEnd(e),evStart=e=>new Date(e.d+'T'+(e.t||'00:00')+':00'),evStop=e=>new Date(evEnd(e)+'T23:59:59');
+const evEnd=e=>e.d2&&e.d2>=e.d?e.d2:e.d,evCovers=(e,ds)=>ds>=e.d&&ds<=evEnd(e),evStart=e=>new Date(e.d+'T'+(e.t||'00:00')+':00'),evStop=e=>new Date(evEnd(e)+(e.t2&&!(e.d2>e.d)?'T'+e.t2+':00':'T23:59:59'));
 const vacN=e=>{const n=Math.round((dd(evEnd(e))-dd(e.d))/864e5)+1;return n+(n==1?' day':' days')};
+const DEFC={vac:'#e64980',event:'#be4bdb',meet:'#12b886'},DEFI={job:'📌',vac:'vico',event:'🎉',meet:'👥'},SYMS=['vico','🎉','👥','📞','💻','🎓','🎂','✈️','🏥','🔧','🚢','🍕','⚽','⭐','📌','🏠'];
+let evSym='',evTouched=false;
+const kd=e=>e.k||(e.v?'vac':'job'),isCol=e=>kd(e)!='job',ecol=e=>e.c||DEFC[kd(e)]||'#e64980';
 const VCOL='#e64980',VI='<svg class="vi" viewBox="0 0 24 24"><use href="#vico"/></svg>';
-const rangeText=e=>sh(e.d)+(e.d2&&e.d2>e.d?' → '+sh(e.d2):'')+(e.t?' · '+e.t:'')+(e.v?' · '+vacN(e):'');
+const esym=e=>{const s=e.ic||DEFI[kd(e)];return s=='vico'?VI:s};
+const rangeText=e=>sh(e.d)+(e.d2&&e.d2>e.d?' → '+sh(e.d2):'')+(e.t?' · '+e.t+(e.t2?'–'+e.t2:''):'')+(e.v?' · '+vacN(e):'');
 const upcoming=()=>{const n=new Date();return(S.events||[]).filter(e=>evStop(e)>=n).sort((a,b)=>evStart(a)-evStart(b))};
 function cdText(e){const n=new Date(),st=evStart(e);
  if(n>=st&&n<=evStop(e)){const day=Math.round((new Date(today()+'T00:00:00')-new Date(e.d+'T00:00:00'))/864e5)+1,tot=Math.round((new Date(evEnd(e)+'T00:00:00')-new Date(e.d+'T00:00:00'))/864e5)+1;return 'Ongoing · day '+day+' of '+tot}
  const s=Math.max(0,Math.floor((st-n)/1000)),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),c=s%60,p=v=>String(v).padStart(2,'0');
  return d>0?d+'d '+p(h)+'h '+p(m)+'m':p(h)+':'+p(m)+':'+p(c)}
-const evCard=(e,i)=>`<div class="ec ${e.v?'pv':'p'+Math.min(i,3)}" ${e.v?`style="--ec:linear-gradient(135deg,${e.c||VCOL},color-mix(in srgb,${e.c||VCOL} 60%,#fff));color:${ink(e.c||VCOL)}"`:''} onclick="goEv('${e.id}')"><div class="ti">${e.v?VI:i==0?'🚨':'📌'} ${esc(e.title)}</div><div class="cd2" data-cd="${e.id}">${cdText(e)}</div><small>${rangeText(e)}${e.pid?' · '+esc(pname(e.pid)):''}${e.nt?' · '+esc(e.nt):''}</small></div>`;
+const evCard=(e,i)=>`<div class="ec ${isCol(e)?'pv':'p'+Math.min(i,3)}" ${isCol(e)?`style="--ec:linear-gradient(135deg,${ecol(e)},color-mix(in srgb,${ecol(e)} 60%,#fff));color:${ink(ecol(e))}"`:''} onclick="goEv('${e.id}')"><div class="ti">${isCol(e)||e.ic?esym(e):i==0?'🚨':'📌'} ${esc(e.title)}</div><div class="cd2" data-cd="${e.id}">${cdText(e)}</div><small>${rangeText(e)}${e.pid?' · '+esc(pname(e.pid)):''}${e.nt?' · '+esc(e.nt):''}</small></div>`;
 function renderUpc(){const U=upcoming().slice(0,3);$('#upc').innerHTML=U.map(evCard).join('')}
 setInterval(()=>{$$('[data-cd]').forEach(el=>{const e=(S.events||[]).find(x=>x.id==el.dataset.cd);if(e)el.textContent=cdText(e)})},1000);setInterval(()=>{renderUpc()},60000);
 function showPop(force){const U=upcoming().filter(e=>evStart(e)-new Date()<30*864e5).slice(0,3);if(!U.length){if(force)toast('No upcoming jobs scheduled');return}const key=U.map(e=>e.id).join();if(!force&&window.__shown===key)return;$('#popl').innerHTML=U.map(evCard).join('');$('#upop').hidden=false;window.__shown=key}
@@ -810,16 +825,16 @@ function closePop(){$('#upop').hidden=true}
 $('#pok').onclick=closePop;$('#popc').onclick=()=>{closePop();goEv((upcoming()[0]||{}).id)};
 window.goEv=i=>{const e=(S.events||[]).find(x=>x.id==i);if(!e)return;if(!$('#upop').hidden)closePop();cal.sel=e.d>=today()?e.d:today();cal.y=+cal.sel.slice(0,4);cal.m=+cal.sel.slice(5,7)-1;go('cal')};
 let evEd=null;
-function openEv(e,ds,kind){evEd=e?e.id:null;$('#evt').textContent=e?'Edit scheduled job':'Schedule a job';$('#evname').value=e?e.title:'';$('#evd').value=e?e.d:(ds||cal.sel);$('#evd2').value=e?(e.d2||''):'';$('#evtm').value=e?(e.t||''):'';$('#evp').value=e&&e.pid?pname(e.pid):'';$('#evnote').value=e?(e.nt||''):'';$('#evwrap').hidden=!!e;$('#evw').checked=true;$('#evdel').hidden=!e;$('#evc').value=(e&&e.c)||VCOL;setKind(e?(e.v?'vac':'job'):(kind||'job'));$('#evm').hidden=false;setTimeout(()=>$('#evname').focus(),60)}
+function openEv(e,ds,kind){evEd=e?e.id:null;$('#evt').textContent=e?'Edit scheduled job':'Schedule a job';$('#evname').value=e?e.title:'';$('#evd').value=e?e.d:(ds||cal.sel);$('#evd2').value=e?(e.d2||''):'';$('#evtm').value=e?(e.t||''):'';$('#evp').value=e&&e.pid?pname(e.pid):'';$('#evnote').value=e?(e.nt||''):'';$('#evwrap').hidden=!!e;$('#evw').checked=true;$('#evdel').hidden=!e;evSym=(e&&e.ic)||'';evTouched=!!(e&&e.c);$('#evc').value=(e&&e.c)||DEFC[e?kd(e):(kind||'job')]||VCOL;$('#evt2').value=e?(e.t2||''):'';setKind(e?kd(e):(kind||'job'));$('#evm').hidden=false;setTimeout(()=>$('#evname').focus(),60)}
 window.editEv=i=>openEv((S.events||[]).find(e=>e.id==i));
 window.delEv=i=>ask(((S.events||[]).find(x=>x.id==i)||{}).v?'Delete this vacation?':'Delete this scheduled job and its planned days?',()=>{S.events=S.events.filter(e=>e.id!=i);S.del[i]=uTick();S.logs.filter(l=>l.ev==i&&!done(l)).forEach(l=>S.del[l.id]=uTick());S.logs=S.logs.filter(l=>!(l.ev==i&&!done(l)));save();render();toast('Deleted')});
 function addPlanned(e){const a=dd(e.d),z=dd(evEnd(e));for(let x=new Date(a),k=0;x<=z&&k<31;x.setDate(x.getDate()+1),k++){const ds=iso(x);if(ds<today())continue;S.logs.push({id:id(),d:ds,ls:'Hotel',le:'Hotel',ts:'',s:S.set.ss,e:S.set.se,te:'',n:e.title,pid:e.pid||'',x:[],u:uTick(),ev:e.id})}}
 $('#evnew').onclick=()=>openEv(null,cal.sel);$('#evx').onclick=()=>$('#evm').hidden=true;$('#evdel').onclick=()=>{$('#evm').hidden=true;delEv(evEd)};
-$('#evs').onclick=()=>{let t=$('#evname').value.trim();const vac=evKind=='vac',d=$('#evd').value,d2=$('#evd2').value;if(vac&&!t)t='Vacation';if(!t||!d)return toast('Enter the ship or job name and a start date');if(d2&&d2<d)return toast('The end date is before the start date');
- let pid='';const nm=vac?'':$('#evp').value.trim();if(nm){const p=S.projects.find(x=>x.name.toLowerCase()==nm.toLowerCase())||mkp(nm);pid=p.id}
- S.events=S.events||[];let e=evEd&&S.events.find(x=>x.id==evEd);const o={title:t,d,d2:d2||'',t:vac?'':$('#evtm').value,pid,nt:$('#evnote').value.trim(),u:uTick(),v:vac?1:0,c:vac?$('#evc').value:''};
- if(e)Object.assign(e,o);else{e={id:id(),...o};S.events.push(e);if($('#evw').checked&&!vac)addPlanned(e)}
- save();$('#evm').hidden=true;cal.sel=d;cal.y=+d.slice(0,4);cal.m=+d.slice(5,7)-1;render();toast(vac?'Vacation saved ✔':'Scheduled ✔')};
+$('#evs').onclick=()=>{let t=$('#evname').value.trim();const vac=evKind=='vac',d=$('#evd').value,d2=$('#evd2').value;if(!t&&evKind!='job')t={vac:'Vacation',event:'Event',meet:'Meeting'}[evKind];if(!t||!d)return toast('Enter the ship or job name and a start date');if(d2&&d2<d)return toast('The end date is before the start date');
+ let pid='';const nm=evKind!='job'?'':$('#evp').value.trim();if(nm){const p=S.projects.find(x=>x.name.toLowerCase()==nm.toLowerCase())||mkp(nm);pid=p.id}
+ S.events=S.events||[];let e=evEd&&S.events.find(x=>x.id==evEd);const o={title:t,d,d2:d2||'',t:evKind=='vac'?'':$('#evtm').value,t2:(evKind=='event'||evKind=='meet')?$('#evt2').value:'',pid,nt:$('#evnote').value.trim(),u:uTick(),k:evKind,v:evKind=='vac'?1:0,c:evKind=='job'?'':$('#evc').value,ic:evSym};
+ if(e)Object.assign(e,o);else{e={id:id(),...o};S.events.push(e);if($('#evw').checked&&evKind=='job')addPlanned(e)}
+ save();$('#evm').hidden=true;cal.sel=d;cal.y=+d.slice(0,4);cal.m=+d.slice(5,7)-1;render();toast(evKind=='vac'?'Vacation saved ✔':evKind=='job'?'Scheduled ✔':'Saved ✔')};
 $('#d').value=today();showLb();fillSet();blank();render();showPop();
 const FBK='nssl_fb';const tf=(u,o)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),15000);return fetch(u,Object.assign({},o,{signal:c.signal})).finally(()=>clearTimeout(t))};let fbUn=null,fbT=null;
 const fbCfg=()=>{try{return JSON.parse(localStorage.getItem(FBK)||'null')||{}}catch(e){return{}}};
@@ -861,13 +876,23 @@ enhance();
 
 /* vacation helpers */
 function vacDays(pref){const set=new Set();(S.events||[]).filter(e=>e.v).forEach(e=>{for(let x=dd(e.d),z=dd(evEnd(e)),k=0;x<=z&&k<400;x.setDate(x.getDate()+1),k++){const ds=iso(x);if(ds.startsWith(pref)&&!dayInfo(ds).off)set.add(ds)}});return set.size}
-function vacLg(){const m=cal.y+'-'+String(cal.m+1).padStart(2,'0');return(S.events||[]).filter(e=>e.v&&e.d.slice(0,7)<=m&&evEnd(e).slice(0,7)>=m).map(e=>`<span class="lg"><i style="background:${e.c||VCOL}"></i>${VI} ${esc(e.title)}</span>`).join('')}
+function vacLg(){const m=cal.y+'-'+String(cal.m+1).padStart(2,'0');return(S.events||[]).filter(e=>isCol(e)&&e.d.slice(0,7)<=m&&evEnd(e).slice(0,7)>=m).map(e=>`<span class="lg"><i style="background:${ecol(e)}"></i>${esym(e)} ${esc(e.title)}</span>`).join('')}
 function vacStat(){const el=$('#vstat');if(!el)return;const y=String(cal.y),m=y+'-'+String(cal.m+1).padStart(2,'0'),a=vacDays(m),b=vacDays(y);el.innerHTML=b?`${VI} Vacation working days: <b>${a}</b> this month · <b>${b}</b> in ${y}`:''}
 let evKind='job';
-function setKind(k){evKind=k;const v=k=='vac';$$('#evk button').forEach(b=>b.classList.toggle('on',b.dataset.k==k));$('#evtmw').hidden=v;$('#evpw').hidden=v;$('#evcw').hidden=!v;$('#evnl').textContent=v?'Vacation title':'Ship / job name';$('#evname').placeholder=v?'e.g. Summer holiday':'e.g. MV Atlantic – radar service';$('#evwrap').hidden=v||!!evEd;$('#evt').textContent=v?(evEd?'Edit vacation':'Add vacation'):(evEd?'Edit scheduled job':'Schedule a job');$$('#evcs .sw').forEach(s=>s.classList.toggle('on',s.dataset.c==$('#evc').value))}
-$$('#evk button').forEach(b=>b.onclick=()=>setKind(b.dataset.k));
-$('#evcs').innerHTML=['#e64980','#be4bdb','#12b886','#f59f00','#4c6ef5','#15aabf'].map(c=>`<button type="button" class="sw" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('');
-$$('#evcs .sw').forEach(s=>s.onclick=()=>{$('#evc').value=s.dataset.c;setKind(evKind)});$('#evc').oninput=()=>setKind(evKind);
+function setKind(k,auto){evKind=k;const v=k=='vac',j=k=='job',m=k=='event'||k=='meet';
+ if(auto&&!evTouched){evSym='';if(DEFC[k])$('#evc').value=DEFC[k]}
+ $$('#evk button').forEach(x=>x.classList.toggle('on',x.dataset.k==k));
+ $('#evtmw').hidden=v;$('#evt2w').hidden=!m;$('#evpw').hidden=!j;$('#evcw').hidden=j;$('#evsw').hidden=false;
+ $('#evnl').textContent={job:'Ship / job name',vac:'Vacation title',event:'Event title',meet:'Meeting title'}[k];
+ $('#evname').placeholder={job:'e.g. MV Atlantic – radar service',vac:'e.g. Summer holiday',event:'e.g. Team dinner',meet:'e.g. Townhall meeting'}[k];
+ $('#evwrap').hidden=!j||!!evEd;
+ $('#evt').textContent=(evEd?'Edit ':'Add ')+{job:'scheduled job',vac:'vacation',event:'event',meet:'meeting'}[k];
+ const cur=evSym||DEFI[k];$('#evss').innerHTML=SYMS.map(s=>`<button type="button" class="sy${s==cur?' on':''}" data-s="${s}">${s=='vico'?VI:s}</button>`).join('');
+ $$('#evcs .sw').forEach(s=>s.classList.toggle('on',s.dataset.c==$('#evc').value))}
+$('#evss').onclick=e=>{const b=e.target.closest('.sy');if(b){evSym=b.dataset.s;evTouched=true;setKind(evKind)}};
+$$('#evk button').forEach(b=>b.onclick=()=>setKind(b.dataset.k,true));
+$('#evcs').innerHTML=['#e64980','#be4bdb','#4c6ef5','#15aabf','#12b886','#94d82d','#f59f00','#fa5252'].map(c=>`<button type="button" class="sw" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('');
+$$('#evcs .sw').forEach(s=>s.onclick=()=>{$('#evc').value=s.dataset.c;evTouched=true;setKind(evKind)});$('#evc').oninput=()=>{evTouched=true;setKind(evKind)};
 $('#vnew').onclick=()=>openEv(null,cal.sel,'vac');
 /* brand: tagline spans the same width as the wordmark */
 function fitBrand(){const h=$('.brand h1'),p=$('.brand p');if(!h||!p)return;p.style.fontSize='10px';p.classList.add('meas');const nat=p.getBoundingClientRect().width;p.classList.remove('meas');const w=h.getBoundingClientRect().width;if(!nat||!w)return;p.style.fontSize=Math.max(9,Math.min(15,10*w/nat*.9)).toFixed(2)+'px'}
