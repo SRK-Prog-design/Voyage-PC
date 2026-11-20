@@ -496,6 +496,19 @@ html.cmp .evr{padding:7px 10px}
 html.cmp .stat{padding:9px}html.cmp .big2{font-size:26px}
 html.cmp .bb{padding:9px 4px}
 
+
+/* === v19b: collapsible cards === */
+.cx{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--inp);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;line-height:1;padding:0;flex:none;margin-left:8px;transition:transform .25s,background .2s}
+.cx:active{transform:scale(.88)}
+.card.cc .cx{transform:rotate(-90deg);background:var(--acc);color:var(--on);border-color:transparent}
+.card.cc>*:not(:first-child){display:none!important}
+.card.cc>.hd,.card.cc>.fh{margin-bottom:0}
+.card:not(.cc)>*:not(:first-child){animation:rdin .25s ease both}
+.card>.hd h2,.card>.fh h2{cursor:pointer}
+#plh.cc+#plist{display:none}
+#plh .mut{margin-left:auto}
+.card.cc .xall{display:none}
+
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script></head><body>
 <svg width="0" height="0" style="position:absolute"><symbol id="tk" viewBox="0 0 64 40"><g transform="translate(64 0) scale(-1 1)">
 <rect x="51" y="5" width="5" height="7" fill="#d62839"/><rect x="51" y="8" width="5" height="1.5" fill="#fff"/>
@@ -581,6 +594,7 @@ html.cmp .bb{padding:9px 4px}
 </section>
 <section id="proj" hidden>
 <div class="card"><div class="hd"><h2>New special project</h2><button class="btn s xall" id="xallp" hidden>＋ Expand all</button></div><div class="g"><div class="full"><label>Project name</label><input id="pn" placeholder="e.g. GMDSS survey"></div><div class="full" style="text-align:right"><button class="btn" id="addp">Add project</button></div></div></div>
+<div class="card" id="plh"><div class="hd"><h2>Projects</h2><span class="mut" id="pcnt"></span></div></div>
 <div id="plist"></div>
 </section>
 <section id="sum" hidden>
@@ -988,7 +1002,7 @@ function enhance(){const sel='.kt b,.big2,.trio b';$$(sel).forEach(el=>{const t=
  let m=t.match(/^(\d+)h (\d{2})m$/);
  if(m){const tot=+m[1]*60+ +m[2];if(tot>0)cnt(el,0,tot,v=>{const x=Math.round(v*tot);return Math.floor(x/60)+'h '+String(x%60).padStart(2,'0')+'m'})}
  else if((m=t.match(/^(\d+)$/))&&+m[1]>0){const n=+m[1];cnt(el,0,n,v=>String(Math.round(v*n)))}})}
-const _rr=render;render=function(){_rr();enhance();xLbl()};
+const _rr=render;render=function(){_rr();enhance();xLbl();{const n=S.projects.length;$('#pcnt').textContent=n?n+(n==1?' project':' projects'):''}};
 const _go=go;go=function(t){CV={};$('#nav').style.setProperty('--i',['log','cal','proj','sum','data'].indexOf(t));_go(t)};
 function burst(){if(RM())return;const cs=['#0077b6','#f59f00','#e03131','#2f9e44','#7048e8','#ff8a1f'];for(let i=0;i<20;i++){const p=document.createElement('i');p.className='cf';const a=Math.random()*Math.PI*2,d=70+Math.random()*120;p.style.cssText=`background:${cs[i%cs.length]};--x:${(Math.cos(a)*d).toFixed(0)}px;--y:${(Math.sin(a)*d-70).toFixed(0)}px;left:50%;top:62%`;document.body.appendChild(p);setTimeout(()=>p.remove(),1000)}}
 document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('.btn,.bb,.nav button,.chip,.cbtn,.ib button');if(!b)return;const r=b.getBoundingClientRect(),s=Math.max(r.width,r.height)*1.3,x=document.createElement('span');x.className='rip';x.style.cssText=`width:${s}px;height:${s}px;left:${e.clientX-r.left-s/2}px;top:${e.clientY-r.top-s/2}px`;b.appendChild(x);setTimeout(()=>x.remove(),650)},{passive:true});
@@ -997,6 +1011,18 @@ enhance();
 function applyDense(){let v='1';try{v=localStorage.getItem('nssl_dense')||'1'}catch(e){}document.documentElement.classList.toggle('cmp',v!=='0');$$('#denseg button').forEach(x=>x.classList.toggle('on',x.dataset.d==v))}
 $$('#denseg button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('nssl_dense',b.dataset.d)}catch(e){}applyDense();toast(b.dataset.d=='1'?'Compact layout':'Roomy layout')});applyDense();
 $('#xall').onclick=()=>xAll('#list [data-x]');$('#xallp').onclick=()=>xAll('#plist [data-x]');xLbl();
+
+const CK='nssl_col';let COL=[];try{COL=JSON.parse(localStorage.getItem(CK)||'[]')}catch(e){}
+function initCollapse(){$$('main section').forEach(sec=>sec.querySelectorAll(':scope>.card').forEach((card,ci)=>{
+ if(card.classList.contains('pc')||card.id==='instc')return;let h=card.firstElementChild;if(!h)return;
+ if(h.tagName==='H2'){const w=document.createElement('div');w.className='hd';card.insertBefore(w,h);w.appendChild(h);h=w}
+ else if(!h.matches('.hd,.fh'))return;
+ const h2=h.querySelector('h2');if(!h2)return;
+ const key=sec.id+':'+ci,btn=document.createElement('button');btn.type='button';btn.className='cx';btn.textContent='⌄';btn.setAttribute('aria-label','Collapse or expand');h.appendChild(btn);
+ const set=on=>{card.classList.toggle('cc',on);btn.setAttribute('aria-expanded',String(!on))};
+ const tog=()=>{const on=!card.classList.contains('cc');set(on);COL=COL.filter(k=>k!==key);if(on)COL.push(key);try{localStorage.setItem(CK,JSON.stringify(COL))}catch(e){}};
+ btn.onclick=tog;h2.onclick=tog;set(COL.includes(key))}))}
+initCollapse();
 
 /* vacation helpers */
 function vacDays(pref){const set=new Set();(S.events||[]).filter(e=>e.v).forEach(e=>{for(let x=dd(e.d),z=dd(evEnd(e)),k=0;x<=z&&k<400;x.setDate(x.getDate()+1),k++){const ds=iso(x);if(ds.startsWith(pref)&&!dayInfo(ds).off)set.add(ds)}});return set.size}
